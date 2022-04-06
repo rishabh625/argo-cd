@@ -2,10 +2,14 @@ package v1alpha1
 
 import (
 	fmt "fmt"
+	"io/ioutil"
+	"os"
+	"path"
 	"reflect"
 	"testing"
 	"time"
 
+	argocdcommon "github.com/argoproj/argo-cd/v2/common"
 	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/gitops-engine/pkg/sync/common"
@@ -2595,4 +2599,41 @@ func TestEnvsubst(t *testing.T) {
 
 	assert.Equal(t, "bar", env.Envsubst("$foo"))
 	assert.Equal(t, "$foo", env.Envsubst("$$foo"))
+}
+
+func TestGetCAPath(t *testing.T) {
+
+	temppath, err := ioutil.TempDir("", "argocd-cert-test")
+	if err != nil {
+		panic(err)
+	}
+	cert, err := ioutil.ReadFile("../../../../test/fixture/certs/argocd-test-server.crt")
+	if err != nil {
+		panic(err)
+	}
+	err = ioutil.WriteFile(path.Join(temppath, "foo.example.com"), cert, 0666)
+	if err != nil {
+		panic(err)
+	}
+	defer os.RemoveAll(temppath)
+	os.Setenv(argocdcommon.EnvVarTLSDataPath, temppath)
+	validcert := []string{
+		"https://foo.example.com",
+		"oci://foo.example.com",
+		"foo.example.com",
+	}
+	invalidpath := []string{
+		"https://bar.example.com",
+		"oci://bar.example.com",
+		"bar.example.com",
+	}
+
+	for _, str := range validcert {
+		path := getCAPath(str)
+		assert.NotEmpty(t, path)
+	}
+	for _, str := range invalidpath {
+		path := getCAPath(str)
+		assert.Empty(t, path)
+	}
 }
