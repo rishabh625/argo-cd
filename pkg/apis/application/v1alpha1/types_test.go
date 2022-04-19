@@ -2600,17 +2600,11 @@ func Test_validateGroupName(t *testing.T) {
 func TestGetCAPath(t *testing.T) {
 
 	temppath, err := ioutil.TempDir("", "argocd-cert-test")
-	if err != nil {
-		panic(err)
-	}
+	assert.NoError(t, err)
 	cert, err := ioutil.ReadFile("../../../../test/fixture/certs/argocd-test-server.crt")
-	if err != nil {
-		panic(err)
-	}
+	assert.NoError(t, err)
 	err = ioutil.WriteFile(path.Join(temppath, "foo.example.com"), cert, 0666)
-	if err != nil {
-		panic(err)
-	}
+	assert.NoError(t, err)
 	defer os.RemoveAll(temppath)
 	os.Setenv(argocdcommon.EnvVarTLSDataPath, temppath)
 	validcert := []string{
